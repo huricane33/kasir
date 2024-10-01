@@ -27,11 +27,17 @@ def extract_summary(excel_file):
     summary_df['SELISIH'] = pd.to_numeric(summary_df['SELISIH'], errors='coerce')
     summary_df['STRUK'] = pd.to_numeric(summary_df['STRUK'], errors='coerce')
 
+    # Count occurrences of each KASIR
+    kasir_count = summary_df.groupby('KASIR').size().reset_index(name='transaction_count')
+
     # Group by KASIR and sum the STRUK values
     summary_grouped = summary_df.groupby('KASIR').agg(
         total_struk=pd.NamedAgg(column='STRUK', aggfunc='sum'),
         negative_selisih_count=pd.NamedAgg(column='SELISIH', aggfunc=lambda x: (x < 0).sum())
     ).reset_index()
+
+    # Merge the transaction count into the final grouped dataframe
+    summary_grouped = summary_grouped.merge(kasir_count, on='KASIR')
 
     return summary_grouped
 
@@ -47,7 +53,7 @@ if uploaded_file is not None:
     summary_grouped_df = extract_summary(uploaded_file)
 
     # Display the processed summary
-    st.write("Summary of Struk Sum and Negative Selisih Count:")
+    st.write("Summary of Struk Sum, Negative Selisih Count, and Kasir Transaction Count:")
     st.dataframe(summary_grouped_df)
 
     # Option to download the processed data as CSV
